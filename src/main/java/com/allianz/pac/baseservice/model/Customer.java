@@ -1,5 +1,6 @@
 package com.allianz.pac.baseservice.model;
 
+import com.allianz.pac.baseservice.common.enums.CustomerStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

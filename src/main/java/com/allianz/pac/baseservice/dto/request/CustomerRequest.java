@@ -1,6 +1,6 @@
 package com.allianz.pac.baseservice.dto.request;
 
-import com.allianz.pac.baseservice.model.CustomerStatus;
+import com.allianz.pac.baseservice.common.enums.CustomerStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

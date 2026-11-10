@@ -3,7 +3,7 @@ package com.allianz.pac.baseservice.support;
 import com.allianz.pac.baseservice.config.properties.LoggingProperties;
 import com.allianz.pac.baseservice.dto.request.CustomerRequest;
 import com.allianz.pac.baseservice.dto.response.CustomerResponse;
-import com.allianz.pac.baseservice.model.CustomerStatus;
+import com.allianz.pac.baseservice.common.enums.CustomerStatus;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;

@@ -27,6 +27,7 @@ Upgrade Spring Boot and Spring Cloud **together** (official compatibility matrix
 | `client` | Outbound HTTP clients extending `BaseWebClient` (+ `WebClientFilters`) |
 | `common.annotation` | `@TransactionalWrite`, `@TransactionalRead`, `@Loggable` |
 | `common.constants` | `AppConstants`, `MessageKeys`, `CacheNames`, `ResilienceInstances` |
+| `common.enums` | Enums shared by DTOs and entities (e.g. `CustomerStatus`) |
 | `common.filter` | Servlet filters (correlation id, request logging) |
 | `common.logging` | `LoggingAspect`, `MdcTaskDecorator`, lifecycle logger |
 | `common.response` | `ApiResponse` envelope + `ApiResponseFactory` |
@@ -41,6 +42,14 @@ Upgrade Spring Boot and Spring Cloud **together** (official compatibility matrix
 | `util` | Stateless helpers (`final` class, private constructor) |
 
 ## Mandatory rules
+
+### DTOs only at the API boundary (enforced by `ArchitectureTest`)
+- Every request body and every response payload is a DTO record from `dto.request` / `dto.response`.
+  JPA entities (`model`) are NEVER accepted, returned, cached or sent to other services.
+- Controllers and DTOs must not import anything from `model`; entities may only be used in
+  `model`, `repository`, `service` and `mapper`. Controllers never call repositories.
+- Enums shared by the API and the entities live in `common.enums`.
+- Violations fail `./mvnw verify` – fix the code, never weaken the rules.
 
 ### Responses
 - Every endpoint returns `ResponseEntity<ApiResponse<T>>` built with `ApiResponseFactory` (`ok`, `created`, `success`).
@@ -118,6 +127,7 @@ Upgrade Spring Boot and Spring Cloud **together** (official compatibility matrix
   - Web slice (`@WebMvcTest`): request mapping, validation, envelope, error mapping.
   - JPA slice (`@DataJpaTest` + `@AutoConfigureTestDatabase(replace = NONE)` + profile `test`).
   - Integration (`*IT`, `@SpringBootTest` + profile `test`): full flows, rollback, async, resilience.
+  - Architecture (`ArchitectureTest`, ArchUnit): DTO-only API boundary and layering rules.
 - No Docker/network required: H2 (PostgreSQL mode), simple cache, Consul disabled, downstream stubbed.
 - Test names: `@DisplayName` describing behaviour; AAA structure (arrange / act / assert).
 

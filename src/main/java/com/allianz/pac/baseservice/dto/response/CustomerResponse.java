@@ -1,6 +1,6 @@
 package com.allianz.pac.baseservice.dto.response;
 
-import com.allianz.pac.baseservice.model.CustomerStatus;
+import com.allianz.pac.baseservice.common.enums.CustomerStatus;
 import java.time.Instant;
 
 /**

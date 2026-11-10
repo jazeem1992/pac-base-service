@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.allianz.pac.baseservice.config.JpaAuditingConfig;
 import com.allianz.pac.baseservice.config.properties.AuditProperties;
 import com.allianz.pac.baseservice.model.Customer;
-import com.allianz.pac.baseservice.model.CustomerStatus;
+import com.allianz.pac.baseservice.common.enums.CustomerStatus;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

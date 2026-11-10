@@ -19,7 +19,7 @@ import com.allianz.pac.baseservice.exception.ResourceNotFoundException;
 import com.allianz.pac.baseservice.mapper.CustomerMapper;
 import com.allianz.pac.baseservice.mapper.CustomerMapperImpl;
 import com.allianz.pac.baseservice.model.Customer;
-import com.allianz.pac.baseservice.model.CustomerStatus;
+import com.allianz.pac.baseservice.common.enums.CustomerStatus;
 import com.allianz.pac.baseservice.repository.CustomerRepository;
 import com.allianz.pac.baseservice.support.TestFixtures;
 import java.time.Instant;
