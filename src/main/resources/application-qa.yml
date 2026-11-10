@@ -1,0 +1,25 @@
+# =====================================================================================
+#  QA profile - functional testing environment on AWS
+#  Required environment variables:
+#    DB_PROXY_ENDPOINT, DB_NAME, DB_SECRET_NAME, REDIS_HOST, CONSUL_HOST, AWS_REGION
+# =====================================================================================
+
+spring:
+  config:
+    import:
+      # Shared configuration from Consul KV (optional: the service starts without KV entries)
+      - "optional:consul:"
+      - "aws-secretsmanager:${DB_SECRET_NAME}?prefix=db."
+  datasource:
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:15}
+      minimum-idle: ${DB_POOL_MIN_IDLE:3}
+
+logging:
+  level:
+    com.allianz.pac: INFO
+
+app:
+  logging:
+    method-log-level: INFO
+    log-arguments: false

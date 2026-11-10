@@ -1,0 +1,32 @@
+# Build
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+.apt_generated/
+.sts4-cache/
+bin/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs & local files
+*.log
+logs/
+.env
+*.env
+application-*-local.yml
+HELP.md

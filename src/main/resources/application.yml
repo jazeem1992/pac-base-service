@@ -1,0 +1,335 @@
+# =====================================================================================
+#  PAC base service - SHARED configuration (applies to every profile)
+#  Profile files (application-<profile>.yml) only override what differs per environment.
+#  Secrets are NEVER stored here: they come from environment variables or AWS Secrets Manager.
+#  Profiles: local | dev | qa | uat | preprod | prod   (test profile lives in src/test)
+# =====================================================================================
+
+spring:
+  application:
+    name: pac-base-service
+  profiles:
+    default: local
+
+  # ---------- High throughput: virtual threads for Tomcat, @Async and schedulers ----------
+  threads:
+    virtual:
+      enabled: true
+
+  # ---------- Graceful shutdown ----------
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  # ---------- JSON (Jackson) ----------
+  jackson:
+    default-property-inclusion: non_null
+    deserialization:
+      # Unknown JSON fields (from clients or downstream services) are ignored instead of failing
+      fail-on-unknown-properties: false
+      fail-on-null-for-primitives: false
+      accept-single-value-as-array: true
+
+  # ---------- Messages ----------
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
+  # ---------- MVC ----------
+  mvc:
+    async:
+      # Max time of an async (CompletableFuture) request before a 503 is returned
+      request-timeout: 60s
+    problemdetails:
+      enabled: false
+
+  # ---------- Async executor used by @Async (virtual threads) ----------
+  task:
+    execution:
+      thread-name-prefix: pac-async-
+      simple:
+        # Upper bound of concurrently running @Async tasks (back-pressure)
+        concurrency-limit: 2000
+      shutdown:
+        await-termination: true
+        await-termination-period: 30s
+
+  # ---------- Pagination ----------
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 200
+    # ---------- Redis (cache) ----------
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:true}
+      timeout: 2s
+      connect-timeout: 2s
+
+  cache:
+    type: redis
+
+  # ---------- Datasource: AWS RDS PostgreSQL through RDS Proxy ----------
+  datasource:
+    # RDS Proxy endpoint; credentials come from AWS Secrets Manager (db.username / db.password)
+    url: jdbc:postgresql://${DB_PROXY_ENDPOINT}:${DB_PORT:5432}/${DB_NAME}?sslmode=${DB_SSL_MODE:require}&ApplicationName=${spring.application.name}
+    username: ${db.username}
+    password: ${db.password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: pac-hikari-pool
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: 10000
+      validation-timeout: 5000
+      idle-timeout: 300000
+      # Must stay below the RDS Proxy idle client timeout (default 30 min)
+      max-lifetime: 1500000
+      keepalive-time: 240000
+      leak-detection-threshold: 0
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+          time_zone: UTC
+        order_inserts: true
+        order_updates: true
+        query:
+          in_clause_parameter_padding: true
+          fail_on_pagination_over_collection_fetch: true
+        default_batch_fetch_size: 50
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+  # ---------- Consul: service discovery + KV config ----------
+  cloud:
+    consul:
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:8500}
+      discovery:
+        enabled: true
+        register: true
+        prefer-ip-address: true
+        instance-id: ${spring.application.name}:${random.value}
+        health-check-path: /actuator/health
+        health-check-interval: 15s
+        health-check-critical-timeout: 1m
+        tags: ${spring.profiles.active:local}
+      config:
+        enabled: true
+        format: yaml
+        fail-fast: false
+    loadbalancer:
+      cache:
+        ttl: 30s
+    aws:
+      region:
+        static: ${AWS_REGION:eu-central-1}
+      secretsmanager:
+        # The Secrets Manager client bean is not needed at runtime; secrets are imported via
+        # spring.config.import in the environment profiles.
+        enabled: false
+
+# ---------- Embedded server ----------
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  compression:
+    enabled: true
+    min-response-size: 2KB
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+    whitelabel:
+      enabled: false
+  tomcat:
+    # Connection limits for high volume (threads are virtual)
+    max-connections: 10000
+    accept-count: 500
+    connection-timeout: 20s
+    keep-alive-timeout: 30s
+    max-keep-alive-requests: 1000
+    mbeanregistry:
+      enabled: true
+
+# ---------- Actuator / observability ----------
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+  health:
+    circuitbreakers:
+      enabled: true
+    ratelimiters:
+      enabled: true
+  info:
+    env:
+      enabled: true
+  observations:
+    key-values:
+      application: ${spring.application.name}
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# ---------- OpenAPI ----------
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+  show-actuator: false
+
+# ---------- Resilience4j (annotation driven: @Retry @CircuitBreaker @Bulkhead @RateLimiter @TimeLimiter) ----------
+resilience4j:
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        exponential-max-wait-duration: 5s
+        retry-exceptions:
+          - com.allianz.pac.baseservice.exception.ExternalServiceException
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+        ignore-exceptions:
+          - com.allianz.pac.baseservice.exception.ExternalServiceClientException
+    instances:
+      creditScoreService:
+        base-config: default
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 50
+        minimum-number-of-calls: 20
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 80
+        slow-call-duration-threshold: 5s
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 5
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        record-exceptions:
+          - com.allianz.pac.baseservice.exception.ExternalServiceException
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+        ignore-exceptions:
+          - com.allianz.pac.baseservice.exception.ExternalServiceClientException
+    instances:
+      creditScoreService:
+        base-config: default
+  bulkhead:
+    configs:
+      default:
+        max-concurrent-calls: 200
+        max-wait-duration: 500ms
+    instances:
+      creditScoreService:
+        base-config: default
+  ratelimiter:
+    configs:
+      default:
+        limit-for-period: 2000
+        limit-refresh-period: 1s
+        timeout-duration: 0s
+        register-health-indicator: false
+    instances:
+      customerApi:
+        base-config: default
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 10s
+        cancel-running-future: true
+
+# ---------- Logging ----------
+logging:
+  level:
+    root: INFO
+    com.allianz.pac: INFO
+
+# =====================================================================================
+#  Application specific properties (bound to classes in config/properties)
+# =====================================================================================
+app:
+  api:
+    base-path: /api/v1
+  transaction:
+    # Default timeout (seconds) of @TransactionalWrite / @TransactionalRead
+    timeout-seconds: 30
+  audit:
+    default-auditor: SYSTEM
+  logging:
+    correlation-id-header: X-Correlation-Id
+    method-log-level: INFO
+    log-arguments: false
+    max-argument-length: 1000
+    slow-execution-threshold: 2s
+    masked-fields:
+      - password
+      - email
+      - phoneNumber
+      - token
+      - secret
+      - authorization
+    excluded-paths:
+      - /actuator
+      - /swagger-ui
+      - /v3/api-docs
+  web-client:
+    connect-timeout: 3s
+    response-timeout: 30s
+    read-timeout: 30s
+    write-timeout: 10s
+    max-in-memory-size: 4MB
+    pool:
+      name: pac-web-client-pool
+      max-connections: 1000
+      pending-acquire-max-count: 2000
+      pending-acquire-timeout: 10s
+      max-idle-time: 30s
+      max-life-time: 5m
+      evict-in-background: 60s
+  downstream:
+    services:
+      credit-score:
+        service-name: credit-score-service
+        # Host = Consul service name, resolved by the load balancer
+        base-url: http://credit-score-service
+        load-balanced: true
+        paths:
+          get-score: /api/v1/credit-scores/{customerId}
+  cache:
+    key-prefix: "${spring.application.name}:${spring.profiles.active:local}:"
+    default-ttl: 10m
+    ttl:
+      customers: 30m
+  openapi:
+    title: PAC Base Service API
+    description: Base microservice template of the PAC 2.0 platform
+    version: v1
+    contact-name: ${OPENAPI_CONTACT_NAME:PAC Platform Team}
+    contact-email: ${OPENAPI_CONTACT_EMAIL:}

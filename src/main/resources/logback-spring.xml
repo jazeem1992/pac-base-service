@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Logging configuration.
+    - local / test : human readable console output including the correlation id
+    - all AWS environments (dev, qa, uat, preprod, prod) : structured JSON (ECS) on stdout,
+      ready for CloudWatch / ELK; every MDC entry (correlationId, ...) becomes a JSON field.
+    Console output is wrapped in an AsyncAppender so logging never blocks request threads under
+    high load. Levels are configured per profile in application-<profile>.yml (logging.level.*).
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="pac-base-service"/>
+    <springProperty scope="context" name="ASYNC_QUEUE_SIZE" source="app.logging.async-queue-size" defaultValue="8192"/>
+
+    <property name="TEXT_PATTERN"
+              value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p [${APP_NAME}] [%X{correlationId:-}] [%15.15t] %-40.40logger{39} : %m%n%wEx"/>
+
+    <springProfile name="local | test">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${TEXT_PATTERN}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <springProfile name="!(local | test)">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+                <format>ecs</format>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>${ASYNC_QUEUE_SIZE}</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="CONSOLE"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+    </root>
+</configuration>

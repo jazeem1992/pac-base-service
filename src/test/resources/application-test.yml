@@ -1,0 +1,56 @@
+# =====================================================================================
+#  TEST profile - automated tests only (no Docker, no network, no AWS).
+#  PostgreSQL is replaced by H2 in PostgreSQL mode, Redis by an in-memory cache,
+#  Consul is disabled and downstream services are stubbed in the tests.
+# =====================================================================================
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:pac_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+  cache:
+    type: simple
+  data:
+    redis:
+      host: localhost
+      ssl:
+        enabled: false
+  cloud:
+    consul:
+      enabled: false
+      config:
+        enabled: false
+      discovery:
+        enabled: false
+    discovery:
+      client:
+        simple:
+          instances:
+            credit-score-service:
+              - uri: http://localhost:65535
+
+management:
+  health:
+    redis:
+      enabled: false
+
+resilience4j:
+  retry:
+    configs:
+      default:
+        wait-duration: 10ms
+        exponential-max-wait-duration: 50ms
+
+logging:
+  level:
+    com.allianz.pac: DEBUG
+
+app:
+  logging:
+    method-log-level: INFO
+    log-arguments: true

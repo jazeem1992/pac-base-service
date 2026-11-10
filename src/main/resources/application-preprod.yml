@@ -1,0 +1,42 @@
+# =====================================================================================
+#  PREPROD profile - production-like environment (same sizing and hardening as prod)
+#  Required environment variables:
+#    DB_PROXY_ENDPOINT, DB_NAME, DB_SECRET_NAME, REDIS_HOST, CONSUL_HOST, AWS_REGION
+# =====================================================================================
+
+spring:
+  config:
+    import:
+      # Shared configuration from Consul KV (optional: the service starts without KV entries)
+      - "optional:consul:"
+      - "aws-secretsmanager:${DB_SECRET_NAME}?prefix=db."
+  datasource:
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:30}
+      minimum-idle: ${DB_POOL_MIN_IDLE:10}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    com.allianz.pac: INFO
+
+app:
+  logging:
+    # Method START/END lines are written at DEBUG (hidden at INFO); requests, slow calls and
+    # failures are still logged. Switch to INFO temporarily for troubleshooting.
+    method-log-level: DEBUG
+    log-arguments: false
