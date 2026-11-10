@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!--
+    PAC 2.0 Checkstyle rules - executed in the "validate" phase of every build (main AND test sources).
+    Any violation fails the build.
+
+    1. Documentation: every class, record, enum, annotation, constructor and method (including private
+       and test methods) must have Javadoc with complete @param / @return descriptions.
+    2. Source-level rules aligned with the Sonar "Sonar way" profile (rule ids in comments).
+
+    Suppress a single finding only with a justification:
+        @SuppressWarnings("checkstyle:<CheckName>") // reason
+-->
+<module name="Checker">
+    <property name="charset" value="UTF-8"/>
+    <property name="severity" value="error"/>
+    <property name="fileExtensions" value="java"/>
+
+    <module name="SuppressWarningsFilter"/>
+    <module name="FileTabCharacter"/>
+    <module name="FileLength">
+        <property name="max" value="1000"/>
+    </module>
+    <module name="LineLength">
+        <property name="max" value="150"/>
+        <property name="ignorePattern" value="^(package|import) .*$"/>
+    </module>
+
+    <module name="TreeWalker">
+        <module name="SuppressWarningsHolder"/>
+
+        <!-- ===================== 1. Javadoc / method descriptions ===================== -->
+        <module name="MissingJavadocType">
+            <property name="scope" value="private"/>
+        </module>
+        <module name="MissingJavadocMethod">
+            <property name="scope" value="private"/>
+            <property name="allowMissingPropertyJavadoc" value="false"/>
+            <property name="tokens" value="METHOD_DEF, CTOR_DEF, ANNOTATION_FIELD_DEF, COMPACT_CTOR_DEF"/>
+        </module>
+        <module name="JavadocMethod">
+            <property name="accessModifiers" value="public, protected, package, private"/>
+            <property name="allowMissingParamTags" value="false"/>
+            <property name="allowMissingReturnTag" value="false"/>
+        </module>
+        <module name="JavadocType">
+            <property name="allowMissingParamTags" value="false"/>
+        </module>
+        <module name="SummaryJavadoc"/>
+        <module name="NonEmptyAtclauseDescription"/>
+        <module name="InvalidJavadocPosition"/>
+        <module name="JavadocBlockTagLocation"/>
+        <module name="AtclauseOrder"/>
+
+        <!-- ===================== 2. Sonar-aligned rules ===================== -->
+        <!-- Imports: S2208 wildcard imports, S1128 unused imports -->
+        <module name="AvoidStarImport"/>
+        <module name="UnusedImports"/>
+        <module name="RedundantImport"/>
+        <module name="IllegalImport"/>
+
+        <!-- Blocks & statements: S121, S108, S2486, S1116, S1121, S128, S131 -->
+        <module name="NeedBraces"/>
+        <module name="EmptyBlock">
+            <property name="option" value="text"/>
+        </module>
+        <module name="EmptyCatchBlock"/>
+        <module name="EmptyStatement"/>
+        <module name="InnerAssignment"/>
+        <module name="FallThrough"/>
+        <module name="MissingSwitchDefault"/>
+        <module name="DefaultComesLast"/>
+        <module name="OneStatementPerLine"/>
+        <module name="MultipleVariableDeclarations"/>
+        <module name="AvoidNestedBlocks"/>
+
+        <!-- Correctness: S1206, S4973, S1125, S1126, S1111, S1221 -->
+        <module name="EqualsHashCode"/>
+        <module name="CovariantEquals"/>
+        <module name="StringLiteralEquality"/>
+        <module name="SimplifyBooleanExpression"/>
+        <module name="SimplifyBooleanReturn"/>
+        <module name="NoFinalizer"/>
+        <module name="SuperClone"/>
+        <module name="AvoidDoubleBraceInitialization"/>
+        <module name="UpperEll"/>
+        <module name="ArrayTypeStyle"/>
+        <module name="UnusedLocalVariable"/>
+        <!-- S2221 / S1181: no catch of Exception / Throwable / RuntimeException -->
+        <module name="IllegalCatch"/>
+
+        <!-- Class design: S1118 utility class constructor, S1104 public fields, S1124 modifier order -->
+        <module name="HideUtilityClassConstructor"/>
+        <module name="FinalClass"/>
+        <module name="VisibilityModifier">
+            <property name="protectedAllowed" value="false"/>
+            <property name="packageAllowed" value="false"/>
+        </module>
+        <module name="ModifierOrder"/>
+        <module name="OneTopLevelClass"/>
+        <module name="OuterTypeFilename"/>
+
+        <!-- Size & complexity: S138, S107, S1541, S134 -->
+        <module name="MethodLength">
+            <property name="max" value="60"/>
+            <property name="countEmpty" value="false"/>
+        </module>
+        <module name="ParameterNumber">
+            <property name="max" value="7"/>
+            <property name="ignoreOverriddenMethods" value="true"/>
+        </module>
+        <module name="CyclomaticComplexity">
+            <property name="max" value="10"/>
+            <property name="switchBlockAsSingleDecisionPoint" value="true"/>
+        </module>
+        <module name="NestedIfDepth">
+            <property name="max" value="3"/>
+        </module>
+        <module name="NestedTryDepth">
+            <property name="max" value="1"/>
+        </module>
+
+        <!-- Naming: S100, S101, S115, S116, S117, S120 -->
+        <module name="PackageName">
+            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
+        </module>
+        <module name="TypeName"/>
+        <module name="MethodName"/>
+        <module name="ConstantName"/>
+        <module name="StaticVariableName"/>
+        <module name="MemberName"/>
+        <module name="ParameterName"/>
+        <module name="LambdaParameterName"/>
+        <module name="LocalVariableName"/>
+        <module name="LocalFinalVariableName"/>
+        <module name="ClassTypeParameterName"/>
+        <module name="MethodTypeParameterName"/>
+        <module name="RecordComponentName"/>
+    </module>
+</module>

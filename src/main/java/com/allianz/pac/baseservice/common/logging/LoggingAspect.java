@@ -88,7 +88,8 @@ public class LoggingAspect {
      * @throws Throwable any exception thrown by the intercepted method, rethrown unchanged
      */
     @Around("controllerLayer() || serviceLayer() || clientLayer() || repositoryLayer() || loggableMarked()")
-    @SuppressWarnings("java:S112")
+    // Must catch Throwable to log and rethrow whatever the intercepted method throws (rethrown unchanged).
+    @SuppressWarnings({"java:S112", "java:S1181", "checkstyle:IllegalCatch"})
     public Object logExecution(ProceedingJoinPoint joinPoint) throws Throwable {
         Class<?> targetType = resolveTargetType(joinPoint);
         Logger logger = LoggerFactory.getLogger(targetType);

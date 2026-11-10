@@ -14,7 +14,8 @@ Upgrade Spring Boot and Spring Cloud **together** (official compatibility matrix
 ## Commands
 
 ```bash
-./mvnw clean verify          # build + unit tests + integration tests + coverage gate (must pass before every commit)
+./mvnw clean verify          # checkstyle + build + unit/architecture/integration tests + coverage gate (must pass before every commit)
+./mvnw checkstyle:check      # Javadoc + Sonar-aligned style rules only (fast)
 ./mvnw test                  # unit + slice tests only (*Test.java)
 ./mvnw spring-boot:run       # run locally (profile "local": local PostgreSQL + Redis)
 ./mvnw sonar:sonar -Dsonar.host.url=... -Dsonar.token=...
@@ -111,7 +112,19 @@ Upgrade Spring Boot and Spring Cloud **together** (official compatibility matrix
 - Unknown JSON properties are ignored (`spring.jackson.deserialization.fail-on-unknown-properties=false`),
   for incoming requests and downstream responses.
 
-### Code style (Sonar)
+### Code style (Sonar) – enforced on every build
+Two automated gates run in `./mvnw verify` and fail the build on any violation:
+
+| Gate | Where | Checks |
+|---|---|---|
+| Checkstyle (`validate` phase) | `config/checkstyle/checkstyle.xml`, main + test sources | Javadoc on every type/constructor/method (incl. private & tests) with complete `@param`/`@return`; Sonar-aligned rules: no wildcard/unused imports, braces, no empty blocks/catches, equals/hashCode, no catching `Exception`/`Throwable`, utility-class constructors, modifier order, method length ≤ 60, parameters ≤ 7, cyclomatic complexity ≤ 10, nested if ≤ 3, naming conventions, line length ≤ 150 |
+| ArchUnit (`CodingRulesTest`, `ArchitectureTest`) | test phase | no field injection (S6813), no `System.out/err` (S106), no generic exceptions thrown (S112), no `printStackTrace` (S1148), no deprecated API (S1874), no `java.util.logging`; layering controller → service → repository; no `@Transactional` in controllers; `WebClient` only in `client`/`config`; endpoints return `ResponseEntity`/`CompletableFuture`; exceptions extend `BaseException`; naming of controllers/services/repositories; DTO-only API boundary |
+
+Suppressing a finding is allowed only with a written justification next to it, e.g.
+`@SuppressWarnings({"java:S1181", "checkstyle:IllegalCatch"})` + comment. Never relax a rule globally.
+The full Sonar analysis (bugs, vulnerabilities, duplication, security hotspots) runs on the Sonar server
+via `./mvnw sonar:sonar` in CI; the local gates catch the most common issues before that.
+
 - Constructor injection only (`@RequiredArgsConstructor`), `private final` fields, no field `@Autowired`.
 - **Every class and every method (including private and test methods) has Javadoc** describing its purpose,
   parameters, return value and thrown exceptions.
@@ -127,7 +140,8 @@ Upgrade Spring Boot and Spring Cloud **together** (official compatibility matrix
   - Web slice (`@WebMvcTest`): request mapping, validation, envelope, error mapping.
   - JPA slice (`@DataJpaTest` + `@AutoConfigureTestDatabase(replace = NONE)` + profile `test`).
   - Integration (`*IT`, `@SpringBootTest` + profile `test`): full flows, rollback, async, resilience.
-  - Architecture (`ArchitectureTest`, ArchUnit): DTO-only API boundary and layering rules.
+  - Architecture (`ArchitectureTest`, `CodingRulesTest`, ArchUnit): DTO-only API boundary, layering,
+    Sonar-aligned coding rules.
 - No Docker/network required: H2 (PostgreSQL mode), simple cache, Consul disabled, downstream stubbed.
 - Test names: `@DisplayName` describing behaviour; AAA structure (arrange / act / assert).
 

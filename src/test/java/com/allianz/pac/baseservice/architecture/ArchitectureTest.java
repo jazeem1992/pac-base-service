@@ -19,8 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>Main rule: API requests and responses are always DTOs - JPA entities never leave the
  * persistence/service layers.
+ *
+ * <p>Holds only static rule fields evaluated by the ArchUnit JUnit engine (utility-class rule suppressed).
  */
 @AnalyzeClasses(packages = "com.allianz.pac.baseservice", importOptions = ImportOption.DoNotIncludeTests.class)
+@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 class ArchitectureTest {
 
     private static final String MODEL = "..model..";
@@ -37,35 +40,35 @@ class ArchitectureTest {
 
     /** Controllers must not use any class of the persistence model. */
     @ArchTest
-    static final ArchRule controllersDoNotDependOnModel = noClasses()
+    static final ArchRule CONTROLLERS_DO_NOT_DEPEND_ON_MODEL = noClasses()
             .that().resideInAPackage(CONTROLLER)
             .should().dependOnClassesThat().resideInAPackage(MODEL)
             .because("API requests and responses must be DTOs, never entities");
 
     /** DTOs must not reference entities or other model classes. */
     @ArchTest
-    static final ArchRule dtosDoNotDependOnModel = noClasses()
+    static final ArchRule DTOS_DO_NOT_DEPEND_ON_MODEL = noClasses()
             .that().resideInAPackage(DTO)
             .should().dependOnClassesThat().resideInAPackage(MODEL)
             .because("DTOs are the API contract and must be independent of the persistence model");
 
     /** No REST endpoint may accept an entity as parameter. */
     @ArchTest
-    static final ArchRule endpointsDoNotAcceptEntities = noMethods()
+    static final ArchRule ENDPOINTS_DO_NOT_ACCEPT_ENTITIES = noMethods()
             .that().areDeclaredInClassesThat().areAnnotatedWith(RestController.class)
             .should().haveRawParameterTypes(ANY_ENTITY_PARAMETER)
             .because("request bodies must be DTOs");
 
     /** No REST endpoint may return an entity. */
     @ArchTest
-    static final ArchRule endpointsDoNotReturnEntities = noMethods()
+    static final ArchRule ENDPOINTS_DO_NOT_RETURN_ENTITIES = noMethods()
             .that().areDeclaredInClassesThat().areAnnotatedWith(RestController.class)
             .should().haveRawReturnType(ENTITY)
             .because("responses must be DTOs wrapped in ApiResponse");
 
     /** Entities are only used by the persistence, service and mapping layers. */
     @ArchTest
-    static final ArchRule entitiesOnlyUsedInPersistenceLayers = classes()
+    static final ArchRule ENTITIES_ONLY_USED_IN_PERSISTENCE_LAYERS = classes()
             .that().areAnnotatedWith(Entity.class)
             .should().onlyHaveDependentClassesThat()
             .resideInAnyPackage(MODEL, "..repository..", "..service..", "..mapper..")
@@ -73,7 +76,7 @@ class ArchitectureTest {
 
     /** Controllers talk to services only, never directly to repositories. */
     @ArchTest
-    static final ArchRule controllersDoNotUseRepositories = noClasses()
+    static final ArchRule CONTROLLERS_DO_NOT_USE_REPOSITORIES = noClasses()
             .that().resideInAPackage(CONTROLLER)
             .should().dependOnClassesThat().resideInAPackage("..repository..")
             .because("business logic and transactions belong to the service layer");

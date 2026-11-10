@@ -9,7 +9,11 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
  *
  * <p>Every PAC microservice is created from this template. Configuration properties under
  * {@code com.allianz.pac.baseservice.config.properties} are discovered automatically.
+ *
+ * <p>The class must stay instantiable because Spring creates and proxies the configuration class,
+ * hence the suppressed utility-class rule.
  */
+@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 @SpringBootApplication
 @ConfigurationPropertiesScan
 public class BaseServiceApplication {
